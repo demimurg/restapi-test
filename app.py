@@ -9,30 +9,19 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
-# Many-to-many. Association table
-users_jokes = db.Table(
-    "users_jokes",
-    db.Column(
-        'user_id', db.Integer,
-        db.ForeignKey('users.id'),
-        primary_key=True
-    ),
-    db.Column(
-        'joke_id', db.Integer,
-        db.ForeignKey('jokes.id'),
-        primary_key=True
-    )
-)
-
-
 class Joke(db.Model):
     __tablename__ = "jokes"
 
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
+    )
 
     def __repr__(self):
-        return "<Joke (id=%d, content=%s)>"\
+        return "<Joke (id=%s, content=%s)>"\
             % (self.id, self.content)
 
 
@@ -41,13 +30,11 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(50), nullable=False)
-    my_jokes = db.relationship(
-        "Joke", secondary=users_jokes,
-        backref="users"
-    )
+
+    jokes = db.relationship("Joke", backref="user", lazy=True)
 
     def __repr__(self):
-        return "<User (id=%d, login=%s)>"\
+        return "<User (id=%s, login=%s)>"\
             % (self.id, self.login)
 
 
