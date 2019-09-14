@@ -1,5 +1,6 @@
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
+from flask_marshmallow import Marshmallow
 import requests
 
 app = Flask(__name__)
@@ -7,6 +8,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://" +\
     "madma:mdma@localhost:5432/app"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
+ma = Marshmallow(app)
 
 
 class Joke(db.Model):
@@ -38,6 +40,22 @@ class User(db.Model):
             % (self.id, self.login)
 
 
+class JokeSchema(ma.ModelSchema):
+    class Meta:
+        model = Joke
+
+
+class UserSchema(ma.ModelSchema):
+    jokes = ma.Nested(JokeSchema, many=True)
+
+    class Meta:
+        model = User
+
+
+joke_schema = JokeSchema()
+user_schema = UserSchema()
+
+
 # Auth and registration. Stupid. I know
 def get_user():
     query_login = request.args.get("login")
@@ -57,21 +75,21 @@ def jokes():
     cur_user = get_user()
 
     if request.method == "GET":
-        return str(cur_user.my_jokes)
+        return user_schema.dump(cur_user)
 
     new_joke = Joke(content=request.form["joke"])
-    cur_user.my_jokes.append(new_joke)
+    cur_user.jokes.append(new_joke)
     db.session.add(cur_user)
     db.session.commit()
 
-    return str(new_joke)
+    return joke_schema.dump(new_joke)
 
 
 @app.route("/api/v1.0/jokes/<int:id>", methods=["GET", "DELETE", "PUT"])
 def specific_joke(id):
     cur_user = get_user()
 
-    for joke in cur_user.my_jokes:
+    for joke in cur_user.jokes:
         if joke.id == id:
             if request.method == "DELETE":
                 db.session.delete(joke)
@@ -81,7 +99,7 @@ def specific_joke(id):
                 db.session.add(joke)
                 db.session.commit()
 
-            return str(joke)
+            return joke_schema.dump(joke)
 
     return {"error": "you have no joke with id %s" % id}
 
@@ -93,9 +111,9 @@ def random_joke():
     new_joke = Joke(content=data["value"])
 
     cur_user = get_user()
-    cur_user.my_jokes.append(new_joke)
+    cur_user.jokes.append(new_joke)
 
     db.session.add(cur_user)
     db.session.commit()
 
-    return str(new_joke)
+    return joke_schema.dump(new_joke)
