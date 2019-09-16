@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 import requests
@@ -43,13 +43,13 @@ class User(db.Model):
 class JokeSchema(ma.ModelSchema):
     class Meta:
         model = Joke
+        fields = ("id", "content")
 
 
 class UserSchema(ma.ModelSchema):
-    jokes = ma.Nested(JokeSchema, many=True)
-
     class Meta:
         model = User
+        fields = ("id", "login")
 
 
 joke_schema = JokeSchema()
@@ -70,22 +70,33 @@ def get_user():
     return user
 
 
-@app.route('/api/v1.0/jokes', methods=["GET", "POST"])
+@app.route('/api/v1/jokes', methods=["GET", "POST"])
 def jokes():
     cur_user = get_user()
 
     if request.method == "GET":
-        return user_schema.dump(cur_user)
+        res = {
+            "user": user_schema.dump(cur_user),
+            "jokes": [
+                joke_schema.dump(j)
+                for j in cur_user.jokes
+            ]
+        }, 200
+
+        return res
 
     new_joke = Joke(content=request.form["joke"])
     cur_user.jokes.append(new_joke)
     db.session.add(cur_user)
     db.session.commit()
 
-    return joke_schema.dump(new_joke)
+    return {
+        "user": user_schema.dump(cur_user),
+        "joke": joke_schema.dump(new_joke)
+    }, 201
 
 
-@app.route("/api/v1.0/jokes/<int:id>", methods=["GET", "DELETE", "PUT"])
+@app.route("/api/v1/jokes/<int:id>", methods=["GET", "DELETE", "PUT"])
 def specific_joke(id):
     cur_user = get_user()
 
@@ -99,16 +110,21 @@ def specific_joke(id):
                 db.session.add(joke)
                 db.session.commit()
 
-            return joke_schema.dump(joke)
+            return {
+                "user_id": cur_user.id,
+                "joke": joke_schema.dump(joke)
+            }, 200
 
-    return {"error": "you have no joke with id %s" % id}
+    return {
+        "error": "you have no joke with id %d" % id
+    }, 404
 
 
-@app.route('/api/v1.0/jokes/random', methods=["GET"])
+@app.route('/api/v1/jokes/random', methods=["GET"])
 def random_joke():
     res = requests.get("https://api.chucknorris.io/jokes/random")
-    data = res.json()
-    new_joke = Joke(content=data["value"])
+    api_data = res.json()
+    new_joke = Joke(content=api_data["value"])
 
     cur_user = get_user()
     cur_user.jokes.append(new_joke)
@@ -116,4 +132,7 @@ def random_joke():
     db.session.add(cur_user)
     db.session.commit()
 
-    return joke_schema.dump(new_joke)
+    return {
+        "user_id": cur_user.id,
+        "joke": joke_schema.dump(new_joke)
+    }, 200
