@@ -1,59 +1,11 @@
-from flask import Flask, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from flask_marshmallow import Marshmallow
 import requests
+from flask import request
 
-app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://" +\
-    "madma:mdma@localhost:5432/app"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db = SQLAlchemy(app)
-ma = Marshmallow(app)
-
-
-class Joke(db.Model):
-    __tablename__ = "jokes"
-
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(
-        db.Integer,
-        db.ForeignKey("users.id"),
-        nullable=False
-    )
-
-    def __repr__(self):
-        return "<Joke (id=%s, content=%s)>"\
-            % (self.id, self.content)
-
-
-class User(db.Model):
-    __tablename__ = "users"
-
-    id = db.Column(db.Integer, primary_key=True)
-    login = db.Column(db.String(50), nullable=False)
-
-    jokes = db.relationship("Joke", backref="user", lazy=True)
-
-    def __repr__(self):
-        return "<User (id=%s, login=%s)>"\
-            % (self.id, self.login)
-
-
-class JokeSchema(ma.ModelSchema):
-    class Meta:
-        model = Joke
-        fields = ("id", "content")
-
-
-class UserSchema(ma.ModelSchema):
-    class Meta:
-        model = User
-        fields = ("id", "login")
-
-
-joke_schema = JokeSchema()
-user_schema = UserSchema()
+from joke_api import app, db
+from joke_api.models import (
+    Joke, User,
+    joke_schema, user_schema
+)
 
 
 # Auth and registration. Stupid. I know
