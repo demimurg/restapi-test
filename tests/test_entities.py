@@ -1,22 +1,46 @@
 import pytest
 import sys
+import requests
+import json
 
 sys.path.append("..")
 from joke_api import app, db
 
+base_url = "/api/v1"
 
-@pytest.fixture(autouse=True)
+
+@pytest.fixture
 def client():
-    app.testing = True
+    app.config["TESTING"] = True
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
     db.create_all()
-    return app.test_client()
+
+    yield app.test_client()
+
+    db.drop_all()
 
 
-class TestJokes():
-    url = "/api/v1/jokes"
+def test_jokes(client):
+    url = base_url + "/jokes"
+    login = "?login=FinnTheHuman"
 
-    def test_random(self, client):
-        res = client.get(self.url + "/random" + "?login=finn")
+    added_jokes = []
+    for _ in range(5):
+        joke_obj = requests\
+            .get("https://api.chucknorris.io/jokes/random")\
+            .json()
+        joke_val = json.loads(joke_obj).value
 
-        assert res.status_code == 200
+        res = client.post(url + login, data={
+            "joke": joke_val
+        })
+
+        db_joke = json.loads(res.get_json())
+        assert joke_val == db_joke.content
+
+        added_jokes.append(db_joke)
+
+    res = client.get(url + login)
+    assert res.status_code == 200
+
+    print(added_jokes, res.get_json())
