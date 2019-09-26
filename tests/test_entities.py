@@ -1,4 +1,4 @@
-import pytest
+import unittest
 import sys
 import requests
 import json
@@ -9,38 +9,58 @@ from joke_api import app, db
 base_url = "/api/v1"
 
 
-@pytest.fixture
-def client():
-    app.config["TESTING"] = True
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-    db.create_all()
-
-    yield app.test_client()
-
-    db.drop_all()
-
-
-def test_jokes(client):
+class JokesViewTests(unittest.TestCase):
     url = base_url + "/jokes"
     login = "?login=FinnTheHuman"
 
-    added_jokes = []
-    for _ in range(5):
-        joke_obj = requests\
-            .get("https://api.chucknorris.io/jokes/random")\
-            .json()
-        joke_val = json.loads(joke_obj).value
+    def setUp(self):
+        app.config["TESTING"] = True
+        app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+        db.create_all()
 
-        res = client.post(url + login, data={
-            "joke": joke_val
-        })
+        self.app = app.test_client()
 
-        db_joke = json.loads(res.get_json())
-        assert joke_val == db_joke.content
+    def tearDown(self):
+        db.drop_all()
 
-        added_jokes.append(db_joke)
+    def test_basic(self):
+        dataset_len = 5
 
-    res = client.get(url + login)
-    assert res.status_code == 200
+        for _ in range(dataset_len):
+            joke_obj = requests\
+                .get("https://api.chucknorris.io/jokes/random")\
+                .content
+            joke_val = json.loads(joke_obj)["value"]
 
-    print(added_jokes, res.get_json())
+            res = self.app.post(
+                self.url + self.login,
+                data={"joke": joke_val}
+            )
+
+            self.assertEqual(
+                res.status_code, 201,
+                "Joke isn't created"
+            )
+
+            db_obj = json.loads(res.data)
+            self.assertEqual(
+                joke_val, db_obj["joke"]["content"],
+                "Source not equal db repr"
+            )
+
+            self.assertIn(
+                db_obj["user"]["login"], self.login,
+                "Post to wrong login"
+            )
+
+        res = self.app.get(self.url + self.login)
+        db_obj = json.loads(res.data)
+
+        self.assertEqual(
+            len(db_obj["jokes"]), dataset_len,
+            "User haven't all jokes"
+        )
+
+
+if __name__ == '__main__':
+    unittest.main()
