@@ -2,6 +2,7 @@ import unittest
 import sys
 import requests
 import json
+from collections import namedtuple
 
 sys.path.append("..")
 from joke_api import app, db
@@ -9,7 +10,7 @@ from joke_api import app, db
 base_url = "/api/v1"
 
 
-class JokesViewTests(unittest.TestCase):
+class ViewTests(unittest.TestCase):
     url = base_url + "/jokes"
     login = "?login=FinnTheHuman"
 
@@ -23,43 +24,62 @@ class JokesViewTests(unittest.TestCase):
     def tearDown(self):
         db.drop_all()
 
-    def test_basic(self):
-        dataset_len = 5
+    def test_statuses(self):
+        Unit = namedtuple("Unit", ["method", "query", "status"])
+        test_cases = [
+            Unit("get", "")
+        ]
 
-        for _ in range(dataset_len):
-            joke_obj = requests\
-                .get("https://api.chucknorris.io/jokes/random")\
-                .content
-            joke_val = json.loads(joke_obj)["value"]
-
-            res = self.app.post(
-                self.url + self.login,
-                data={"joke": joke_val}
-            )
+        for t in test_cases:
+            request = getattr(self.app, t.method)
+            res = request(self.url + self.login + t.query)
 
             self.assertEqual(
-                res.status_code, 201,
-                "Joke isn't created"
+                res.status_code, t.status,
+                "App return wrong http-status"
             )
 
-            db_obj = json.loads(res.data)
-            self.assertEqual(
-                joke_val, db_obj["joke"]["content"],
-                "Source not equal db repr"
-            )
+    def test_erorr_handling(self):
+        pass
 
-            self.assertIn(
-                db_obj["user"]["login"], self.login,
-                "Post to wrong login"
-            )
 
-        res = self.app.get(self.url + self.login)
-        db_obj = json.loads(res.data)
+    # def test_basic(self):
+    #     dataset_len = 5
 
-        self.assertEqual(
-            len(db_obj["jokes"]), dataset_len,
-            "User haven't all jokes"
-        )
+    #     for _ in range(dataset_len):
+    #         joke_obj = requests\
+    #             .get("https://api.chucknorris.io/jokes/random")\
+    #             .content
+    #         joke_val = json.loads(joke_obj)["value"]
+
+    #         res = self.app.post(
+    #             joke_val, db_obj["joke"]["content"],
+    #             self.url + self.login,
+    #             data={"joke": joke_val}
+    #         )
+
+    #         self.assertEqual(
+    #             res.status_code, 201,
+    #             "Joke isn't created"
+    #         )
+
+    #         db_obj = json.loads(res.data)
+    #         self.assertEqual(
+    #             "Source not equal db repr"
+    #         )
+
+    #         self.assertIn(
+    #             db_obj["user"]["login"], self.login,
+    #             "Post to wrong login"
+    #         )
+
+    #     res = self.app.get(self.url + self.login)
+    #     db_obj = json.loads(res.data)
+
+    #     self.assertEqual(
+    #         len(db_obj["jokes"]), dataset_len,
+    #         "User haven't all jokes"
+    #     )
 
 
 if __name__ == '__main__':
