@@ -27,7 +27,7 @@ def jokes():
     cur_user = get_user()
 
     if request.method == "GET":
-        res = {
+        return {
             "user": user_schema.dump(cur_user),
             "jokes": [
                 joke_schema.dump(j)
@@ -35,9 +35,20 @@ def jokes():
             ]
         }, 200
 
-        return res
+    # validate
+    req_body = request.form
+    err = ""
+    if "joke" not in req_body:
+        err = "Body have no field <joke>"
+    elif type(req_body['joke']) != "str":
+        err = "Wrong type for joke. Must be string"
+    elif len(req_body["joke"]) == 0:
+        err = "Joke is empty"
 
-    new_joke = Joke(content=request.form["joke"])
+    if err:
+        return {"error", err}, 400
+
+    new_joke = Joke(content=req_body["joke"])
     cur_user.jokes.append(new_joke)
     db.session.add(cur_user)
     db.session.commit()
