@@ -22,6 +22,18 @@ def get_user():
     return user
 
 
+def validate_joke(req_body):
+    err = ""
+    if "joke" not in req_body:
+        err = "Body have no field <joke>"
+    elif type(req_body['joke']) != "str":
+        err = "Wrong type for joke. Must be string"
+    elif len(req_body["joke"]) == 0:
+        err = "Joke is empty"
+
+    return err
+
+
 @app.route('/api/v1/jokes', methods=["GET", "POST"])
 def jokes():
     cur_user = get_user()
@@ -36,19 +48,11 @@ def jokes():
         }, 200
 
     # validate
-    req_body = request.form
-    err = ""
-    if "joke" not in req_body:
-        err = "Body have no field <joke>"
-    elif type(req_body['joke']) != "str":
-        err = "Wrong type for joke. Must be string"
-    elif len(req_body["joke"]) == 0:
-        err = "Joke is empty"
-
+    err = validate_joke(request.form)
     if err:
         return {"error", err}, 400
 
-    new_joke = Joke(content=req_body["joke"])
+    new_joke = Joke(content=request.form["joke"])
     cur_user.jokes.append(new_joke)
     db.session.add(cur_user)
     db.session.commit()
@@ -69,6 +73,10 @@ def specific_joke(id):
                 db.session.delete(joke)
                 db.session.commit()
             elif request.method == "PUT":
+                err = validate_joke(request.form)
+                if err:
+                    return {"error", err}, 400
+
                 joke.content = request.form["joke"]
                 db.session.add(joke)
                 db.session.commit()
@@ -87,8 +95,12 @@ def specific_joke(id):
 def random_joke():
     res = requests.get("https://api.chucknorris.io/jokes/random")
     api_data = res.json()
-    new_joke = Joke(content=api_data["value"])
+    api_data["joke"] = api_data["value"]
+    err = validate_joke(api_data)
+    if err:
+        return {"error": err}, 400
 
+    new_joke = Joke(content=api_data["joke"])
     cur_user = get_user()
     cur_user.jokes.append(new_joke)
 
