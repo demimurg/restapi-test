@@ -3,7 +3,7 @@ from flask import request
 
 from joke_api import app, db
 from joke_api.models import (
-    Joke, User,
+    Joke, User, Log,
     joke_schema, user_schema
 )
 
@@ -32,6 +32,18 @@ def validate_joke(req_body):
         err = "Joke is empty"
 
     return err
+
+
+@app.before_request
+def logging():
+    cur_user = get_user()
+    log = Log(
+        user_id=cur_user.id,
+        ip_addr=request.remote_addr,
+    )
+
+    db.session.add(log)
+    db.session.commit()
 
 
 @app.route('/api/v1/jokes', methods=["GET", "POST"])
