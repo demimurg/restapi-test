@@ -26,7 +26,7 @@ def validate_joke(req_body):
     err = ""
     if "joke" not in req_body:
         err = "Body have no field <joke>"
-    elif type(req_body['joke']) != "str":
+    elif type(req_body['joke']) != str:
         err = "Wrong type for joke. Must be string"
     elif len(req_body["joke"]) == 0:
         err = "Joke is empty"
@@ -59,10 +59,9 @@ def jokes():
             ]
         }, 200
 
-    # validate
     err = validate_joke(request.form)
     if err:
-        return {"error", err}, 400
+        return {"error": err}, 400
 
     new_joke = Joke(content=request.form["joke"])
     cur_user.jokes.append(new_joke)
@@ -99,7 +98,7 @@ def specific_joke(id):
             }, 200
 
     return {
-        "error": "you have no joke with id %d" % id
+        "error": "You have no joke with id %d" % id
     }, 404
 
 
