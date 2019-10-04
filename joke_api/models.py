@@ -1,4 +1,5 @@
 from flask_marshmallow import Marshmallow
+from datetime import datetime
 from joke_api import app, db
 
 
@@ -29,6 +30,19 @@ class User(db.Model):
     def __repr__(self):
         return "<User (id=%s, login=%s)>"\
             % (self.id, self.login)
+
+
+class Log(db.Model):
+    __tablename__ = "logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
+    )
+    ip_addr = db.Column(db.Text, nullable=False)
+    time = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 ma = Marshmallow(app)
