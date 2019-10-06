@@ -83,3 +83,55 @@ def test_jokes(client):
 
     assert res["user"]["id"] == user_id and res["user"]["login"] == login,\
         "[GET] wrong user returned"
+
+
+def test_jokes_id(client):
+    base_url = "/api/v1/jokes"
+    login, user_id = "IceKing", 1
+
+    cases = ["not funny joke", "not realy funny joke"]
+    for j in cases:
+        client.post(
+            base_url+"?login=%s" % login,
+            data={"joke": j}
+        )
+
+    # TEST GET
+    res = client.get(base_url+"/1"+"?login=%s" % login).json
+    assert "user_id" in res and "joke" in res\
+        and "id" in res["joke"]\
+        and "content" in res["joke"]\
+        and res["user_id"] == user_id\
+        and res["joke"]["content"] == cases[0],\
+        "[GET] responce is invalid"
+
+    # TEST PUT
+    red_n, red_text = len(cases)-1, "very funny joke"
+    url = base_url+"/%d" % red_n
+    client.put(
+        url+"?login=%s" % login,
+        data={"joke": red_text}
+    )
+
+    jokes_tb = db.session.query(Joke)
+    j = jokes_tb.filter(Joke.id == red_n).first()
+    assert j.content == red_text,\
+        "[PUT] update joke not working"
+
+    users_tb = db.session.query(User)
+    u = users_tb.filter(User.login == login).first()
+    assert j in u.jokes,\
+        "[PUT] user joke haven't been updated"
+
+    # TEST DELETE
+    client.delete(url+"?login=%s" % login)
+
+    jokes_tb = db.session.query(Joke)
+    j = jokes_tb.filter(Joke.id == red_n).first()
+    assert j is None,\
+        "[DELETE] joke wasn't deleted from db"
+
+    users_tb = db.session.query(User)
+    u = users_tb.filter(User.login == login).first()
+    assert red_text not in [j.content for j in u.jokes],\
+        "[DELETE] joke wasn't deleted from user.jokes"
