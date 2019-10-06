@@ -135,3 +135,34 @@ def test_jokes_id(client):
     u = users_tb.filter(User.login == login).first()
     assert red_text not in [j.content for j in u.jokes],\
         "[DELETE] joke wasn't deleted from user.jokes"
+
+
+def test_invalid_joke(client):
+    login = "BMO"
+
+    routes_methods = [
+        ("/api/v1/jokes", "POST"),
+        ("/api/v1/jokes/1", "PUT")
+    ]
+
+    # For correct work of PUT/update operation
+    res = client.post(
+        "/api/v1/jokes?login=%s" % login,
+        data={"joke": "some joke"}
+    )
+    assert res.status_code == 201
+
+    for r, m in routes_methods:
+        req = getattr(client, m.lower())
+
+        res = req(r+"?login=%s" % login, data={"Charli": "Kaufman"})
+        assert res.status_code == 400\
+            and res.json["error"] == "Body have no field <joke>"
+
+        res = req(r+"?login=%s" % login, data={"joke": 124})
+        assert res.status_code == 400\
+            and res.json["error"] == "Wrong type for joke. Must be string"
+
+        res = req(r+"?login=%s" % login, data={"joke": ""})
+        assert res.status_code == 400\
+            and res.json["error"] == "Joke is empty"
