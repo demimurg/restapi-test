@@ -24,17 +24,20 @@ def test_jokes_random(client):
     testcase_num = 5
 
     for i in range(testcase_num):
-        res = client\
-            .get(url + "?login=%s" % login)\
-            .json
+        res = client.get(url + "?login=%s" % login)
 
-        assert res["user_id"] == user_id,\
+        assert res.status_code == 200,\
+            "status code signals problem"
+
+        body = res.json
+
+        assert body["user_id"] == user_id,\
             "wrong user get a joke"
 
-        assert res["joke"]["id"] == i+1,\
+        assert body["joke"]["id"] == i+1,\
             "joke have wrong id"
 
-        assert res["joke"]["content"] == res["joke"]["content"].strip(),\
+        assert body["joke"]["content"] == body["joke"]["content"].strip(),\
             "joke have trailing whitespaces"
 
     user = users_table.filter(User.login == login).first()
@@ -59,16 +62,21 @@ def test_jokes(client):
         res = client.post(
             url+"?login=%s" % login,
             data={"joke": j}
-        ).json
+        )
 
-        assert "user" in res and "joke" in res\
-            and "id" in res["user"]\
-            and "login" in res["user"]\
-            and "id" in res["joke"]\
-            and "content" in res["joke"],\
+        assert res.status_code == 201,\
+            "[POST] wrong status code"
+
+        body = res.json
+
+        assert "user" in body and "joke" in body\
+            and "id" in body["user"]\
+            and "login" in body["user"]\
+            and "id" in body["joke"]\
+            and "content" in body["joke"],\
             "[POST] responce schema is invalid"
 
-        assert res["user"]["id"] == user_id,\
+        assert body["user"]["id"] == user_id,\
             "[POST] wrong user get a joke"
 
     user = users_table.filter(User.login == login).first()
@@ -76,12 +84,17 @@ def test_jokes(client):
         "[POST] sent != recieved"
 
     # TEST GET
-    res = client.get(url+"?login=%s" % login).json
+    res = client.get(url+"?login=%s" % login)
 
-    assert [j["content"] for j in res["jokes"]] == cases,\
+    assert res.status_code == 200,\
+        "[GET] wrong status code"
+
+    body = res.json
+
+    assert [j["content"] for j in body["jokes"]] == cases,\
         "[GET] wrong collection of jokes returned"
 
-    assert res["user"]["id"] == user_id and res["user"]["login"] == login,\
+    assert body["user"]["id"] == user_id and body["user"]["login"] == login,\
         "[GET] wrong user returned"
 
 
@@ -97,21 +110,29 @@ def test_jokes_id(client):
         )
 
     # TEST GET
-    res = client.get(base_url+"/1"+"?login=%s" % login).json
-    assert "user_id" in res and "joke" in res\
-        and "id" in res["joke"]\
-        and "content" in res["joke"]\
-        and res["user_id"] == user_id\
-        and res["joke"]["content"] == cases[0],\
+    res = client.get(base_url+"/1"+"?login=%s" % login)
+
+    assert res.status_code == 200,\
+        "[GET] wrong status code"
+
+    body = res.json
+    assert "user_id" in body and "joke" in body\
+        and "id" in body["joke"]\
+        and "content" in body["joke"]\
+        and body["user_id"] == user_id\
+        and body["joke"]["content"] == cases[0],\
         "[GET] responce is invalid"
 
     # TEST PUT
     red_n, red_text = len(cases)-1, "very funny joke"
     url = base_url+"/%d" % red_n
-    client.put(
+    res = client.put(
         url+"?login=%s" % login,
         data={"joke": red_text}
     )
+
+    assert res.status_code == 200,\
+        "[PUT] wrong status code"
 
     jokes_tb = db.session.query(Joke)
     j = jokes_tb.filter(Joke.id == red_n).first()
@@ -124,7 +145,10 @@ def test_jokes_id(client):
         "[PUT] user joke haven't been updated"
 
     # TEST DELETE
-    client.delete(url+"?login=%s" % login)
+    res = client.delete(url+"?login=%s" % login)
+
+    assert res.status_code == 200,\
+        "[DELETE] wrong status code"
 
     jokes_tb = db.session.query(Joke)
     j = jokes_tb.filter(Joke.id == red_n).first()
@@ -135,6 +159,15 @@ def test_jokes_id(client):
     u = users_tb.filter(User.login == login).first()
     assert red_text not in [j.content for j in u.jokes],\
         "[DELETE] joke wasn't deleted from user.jokes"
+
+    # WRONG ID
+    for method in ["GET", "PUT", "DELETE"]:
+        req = getattr(client, method.lower())
+        res = req(base_url+"/666?login=%s" % login)
+
+        assert res.status_code == 404,\
+            "jokes table haven't joke with id=666"
+        assert res.json["error"] == "You have no joke with id 666"
 
 
 def test_invalid_joke(client):
