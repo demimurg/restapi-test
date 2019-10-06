@@ -23,10 +23,10 @@ def get_user():
 
 
 def validate_joke(req_body):
-    err = ""
+    err = None
     if "joke" not in req_body:
         err = "Body have no field <joke>"
-    elif type(req_body['joke']) != str:
+    elif req_body['joke'].isdigit() or req_body['joke'] == "None":
         err = "Wrong type for joke. Must be string"
     elif len(req_body["joke"]) == 0:
         err = "Joke is empty"
@@ -86,7 +86,7 @@ def specific_joke(id):
             elif request.method == "PUT":
                 err = validate_joke(request.form)
                 if err:
-                    return {"error", err}, 400
+                    return {"error": err}, 400
 
                 joke.content = request.form["joke"]
                 db.session.add(joke)
