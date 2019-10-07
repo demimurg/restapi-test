@@ -199,3 +199,11 @@ def test_invalid_joke(client):
         res = req(r+"?login=%s" % login, data={"joke": ""})
         assert res.status_code == 400\
             and res.json["error"] == "Joke is empty"
+
+
+def test_auth_errors(client):
+    # api request without login must raise error
+    res = client.get("/api/v1/jokes")
+
+    assert res.status_code == 403\
+        and res.json["error"] == "Login required"

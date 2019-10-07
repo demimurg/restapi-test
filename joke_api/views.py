@@ -15,7 +15,7 @@ def auth():
     query_login = request.args.get("login")
     if query_login is None:
         abort(app.response_class(
-            response=json.dumps({"error": "login required"}),
+            response=json.dumps({"error": "Login required"}),
             status=403,
             mimetype='application/json'
         ))
@@ -116,6 +116,7 @@ def random_joke():
 def validate_joke(body):
     """Causes abort if error"""
 
+    err = None
     if "joke" not in body:
         err = "Body have no field <joke>"
     elif body['joke'].isdigit() or body['joke'] == "None":
