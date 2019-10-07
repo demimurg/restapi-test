@@ -1,5 +1,6 @@
 import requests
-from flask import request
+import json
+from flask import request, g, abort
 
 from joke_api import app, db
 from joke_api.models import (
@@ -8,9 +9,16 @@ from joke_api.models import (
 )
 
 
-# Auth and registration. Stupid. I know
-def get_user():
+# Fake register/auth. Parsed from query param "login="
+@app.before_request
+def auth():
     query_login = request.args.get("login")
+    if query_login is None:
+        abort(app.response_class(
+            response=json.dumps({"error": "login required"}),
+            status=403,
+            mimetype='application/json'
+        ))
 
     user = db.session.query(User)\
         .filter_by(login=query_login).first()
@@ -19,43 +27,33 @@ def get_user():
         db.session.add(user)
         db.session.commit()
 
-    return user
+    g.user = user
 
 
-def validate_joke(req_body):
-    err = None
-    if "joke" not in req_body:
-        err = "Body have no field <joke>"
-    elif req_body['joke'].isdigit() or req_body['joke'] == "None":
-        err = "Wrong type for joke. Must be string"
-    elif len(req_body["joke"]) == 0:
-        err = "Joke is empty"
+@app.after_request
+def logging(responce):
+    try:
+        log = Log(
+            user_id=g.user.id,
+            ip_addr=request.remote_addr,
+        )
 
-    return err
+        db.session.add(log)
+        db.session.commit()
+    except AttributeError:
+        pass
 
-
-@app.before_request
-def logging():
-    cur_user = get_user()
-    log = Log(
-        user_id=cur_user.id,
-        ip_addr=request.remote_addr,
-    )
-
-    db.session.add(log)
-    db.session.commit()
+    return responce
 
 
 @app.route('/api/v1/jokes', methods=["GET", "POST"])
 def jokes():
-    cur_user = get_user()
-
     if request.method == "GET":
         return {
-            "user": user_schema.dump(cur_user),
+            "user": user_schema.dump(g.user),
             "jokes": [
                 joke_schema.dump(j)
-                for j in cur_user.jokes
+                for j in g.user.jokes
             ]
         }, 200
 
@@ -64,21 +62,19 @@ def jokes():
         return {"error": err}, 400
 
     new_joke = Joke(content=request.form["joke"])
-    cur_user.jokes.append(new_joke)
-    db.session.add(cur_user)
+    g.user.jokes.append(new_joke)
+    db.session.add(g.user)
     db.session.commit()
 
     return {
-        "user": user_schema.dump(cur_user),
+        "user": user_schema.dump(g.user),
         "joke": joke_schema.dump(new_joke)
     }, 201
 
 
 @app.route("/api/v1/jokes/<int:id>", methods=["GET", "DELETE", "PUT"])
 def specific_joke(id):
-    cur_user = get_user()
-
-    for joke in cur_user.jokes:
+    for joke in g.user.jokes:
         if joke.id == id:
             if request.method == "DELETE":
                 db.session.delete(joke)
@@ -93,7 +89,7 @@ def specific_joke(id):
                 db.session.commit()
 
             return {
-                "user_id": cur_user.id,
+                "user_id": g.user.id,
                 "joke": joke_schema.dump(joke)
             }, 200
 
@@ -112,13 +108,24 @@ def random_joke():
         return {"error": err}, 400
 
     new_joke = Joke(content=api_data["joke"])
-    cur_user = get_user()
-    cur_user.jokes.append(new_joke)
+    g.user.jokes.append(new_joke)
 
-    db.session.add(cur_user)
+    db.session.add(g.user)
     db.session.commit()
 
     return {
-        "user_id": cur_user.id,
+        "user_id": g.user.id,
         "joke": joke_schema.dump(new_joke)
     }, 200
+
+
+def validate_joke(req_body):
+    err = None
+    if "joke" not in req_body:
+        err = "Body have no field <joke>"
+    elif req_body['joke'].isdigit() or req_body['joke'] == "None":
+        err = "Wrong type for joke. Must be string"
+    elif len(req_body["joke"]) == 0:
+        err = "Joke is empty"
+
+    return err
