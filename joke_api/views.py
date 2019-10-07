@@ -31,7 +31,7 @@ def auth():
 
 
 @app.after_request
-def logging(responce):
+def logging(response):
     try:
         log = Log(
             user_id=g.user.id,
@@ -43,7 +43,7 @@ def logging(responce):
     except AttributeError:
         pass
 
-    return responce
+    return response
 
 
 @app.route('/api/v1/jokes', methods=["GET", "POST"])
@@ -57,9 +57,7 @@ def jokes():
             ]
         }, 200
 
-    err = validate_joke(request.form)
-    if err:
-        return {"error": err}, 400
+    validate_joke(request.form)
 
     new_joke = Joke(content=request.form["joke"])
     g.user.jokes.append(new_joke)
@@ -80,9 +78,7 @@ def specific_joke(id):
                 db.session.delete(joke)
                 db.session.commit()
             elif request.method == "PUT":
-                err = validate_joke(request.form)
-                if err:
-                    return {"error": err}, 400
+                validate_joke(request.form)
 
                 joke.content = request.form["joke"]
                 db.session.add(joke)
@@ -102,10 +98,8 @@ def specific_joke(id):
 def random_joke():
     res = requests.get("https://api.chucknorris.io/jokes/random")
     api_data = res.json()
-    api_data["joke"] = api_data["value"]
-    err = validate_joke(api_data)
-    if err:
-        return {"error": err}, 400
+    api_data["joke"] = api_data.pop("value")
+    validate_joke(api_data)
 
     new_joke = Joke(content=api_data["joke"])
     g.user.jokes.append(new_joke)
@@ -119,13 +113,18 @@ def random_joke():
     }, 200
 
 
-def validate_joke(req_body):
+def validate_joke(body):
     err = None
-    if "joke" not in req_body:
+    if "joke" not in body:
         err = "Body have no field <joke>"
-    elif req_body['joke'].isdigit() or req_body['joke'] == "None":
+    elif body['joke'].isdigit() or body['joke'] == "None":
         err = "Wrong type for joke. Must be string"
-    elif len(req_body["joke"]) == 0:
+    elif len(body["joke"]) == 0:
         err = "Joke is empty"
 
-    return err
+    if err:
+        abort(app.response_class(
+            response=json.dumps({"error": err}),
+            status=400,
+            mimetype='application/json'
+        ))
