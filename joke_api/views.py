@@ -1,7 +1,6 @@
 import requests
-import json
-from flask import request, g, abort
-
+from collections import namedtuple
+from flask import request, g, abort, json
 from joke_api import app, db
 from joke_api.models import (
     Joke, User, Log,
@@ -96,9 +95,34 @@ def specific_joke(id):
 
 @app.route('/api/v1/jokes/random', methods=["GET"])
 def random_joke():
-    res = requests.get("https://api.chucknorris.io/jokes/random")
-    api_data = res.json()
-    api_data["joke"] = api_data.pop("value")
+    ApiObj = namedtuple("ApiObj", ["source", "wrapper"])
+    # wrapper need to prepare form for validation
+    ext_api, that_works = [
+        ApiObj(
+            "https://api.chucknorris.io/jokes/random",
+            lambda res: {"joke": res.json()["value"]}
+        ),
+        ApiObj(
+            "http://api.icndb.com/jokes/random",
+            lambda res: {"joke": res.json()["value"]["joke"]}
+        )
+    ], 0
+
+    api_data = None
+    while api_data is None:
+        try:
+            api = ext_api[that_works]
+            res = requests.get(api.source)
+            api_data = api.wrapper(res)
+        except Exception as err:
+            print("API (%s) ERROR: %s" % (api.source, err))
+            that_works += 1
+
+            if that_works == len(ext_api):
+                return {
+                    "error": "External API for random jokes doesn't working",
+                }, 500
+
     validate_joke(api_data)
 
     new_joke = Joke(content=api_data["joke"])
