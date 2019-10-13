@@ -1,0 +1,8 @@
+psycopg2==2.8.3
+Flask==1.1.1
+Flask_SQLAlchemy==2.4.0
+flask_marshmallow==0.10.1
+marshmallow-sqlalchemy==0.19.0
+pytest==5.1.2
+coverage==4.5.4
+requests==2.21.0
