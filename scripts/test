@@ -1,0 +1,7 @@
+#!/bin/bash
+
+cd tests
+coverage run -m pytest -v --disable-pytest-warnings
+echo "TESTS COVERAGE:"
+coverage report | grep "joke_api" | sed "s/.*joke_api/joke_api/"
+cd ..

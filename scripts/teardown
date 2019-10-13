@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    dropdb ${PSQL_DB}
+    dropuser ${PSQL_USER}
+
+    brew services stop postgresql
+elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+    sudo -u postgres dropdb ${PSQL_DB}
+    sudo -u postgres dropuser ${PSQL_USER}
+
+    sudo service postgresql stop
+fi
+
+unset FLASK_APP
+unset FLASK_ENV
+unset PSQL_USER
+unset PSQL_PASS
+unset PSQL_DB
+
+deactivate
+rm -r venv
+rm tests/.coverage

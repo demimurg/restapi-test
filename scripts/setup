@@ -1,0 +1,39 @@
+#!/bin/bash
+
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+
+export FLASK_APP=joke_api
+export FLASK_ENV=development
+export PSQL_USER=tester
+export PSQL_PASS=tester
+export PSQL_DB=tz_app
+
+# For custom postgresql config
+while getopts u:p:d: option
+do
+case ${option}
+in
+u) export PSQL_USER=${OPTARG};;
+p) export PSQL_PASS=${OPTARG};;
+d) export PSQL_DB=${OPTARG};;
+esac
+done
+
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    brew services start postgresql
+
+    sleep 1 # can't creatte db sequential
+    createdb ${PSQL_DB}
+
+    psql ${PSQL_DB} -c "CREATE USER ${PSQL_USER} WITH ENCRYPTED PASSWORD '${PSQL_PASS}';"
+    psql ${PSQL_DB} -c "GRANT ALL PRIVILEGES ON DATABASE ${PSQL_DB} TO ${PSQL_USER};"
+elif [[ "$OSTYPE" == "linux-gnu" ]]; then
+    sudo service postgresql start
+
+    sudo -u postgres createdb ${PSQL_DB}
+
+    sudo -u postgres psql ${PSQL_DB} -c "CREATE USER ${PSQL_USER} WITH ENCRYPTED PASSWORD '${PSQL_PASS}';"
+    sudo -u postgres psql ${PSQL_DB} -c "GRANT ALL PRIVILEGES ON DATABASE ${PSQL_DB} TO ${PSQL_USER};"
+fi
