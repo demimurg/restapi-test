@@ -125,3 +125,57 @@ The REST API to the example app is described below.
 	  "joke": { "content": "Chuck Norris can multiply length x width x heigth when finding the circumference of a circle.", "id": 2 },
 	  "user_id": 1
 	}
+	
+# Errors handling
+
+## Request without login
+`[GET, POST] /api/v1/jokes`
+`[GET, PUT, DELETE] /api/v1/jokes/:id`
+`GET /api/v1/jokes/random`
+	
+	>>> curl -i "http://localhost:5000/api/v1/jokes"
+	
+	HTTP/1.0 403 FORBIDDEN
+	Content-Type: application/json
+	Content-Length: 27
+	Server: Werkzeug/0.16.0 Python/3.7.3
+	Date: Mon, 14 Oct 2019 15:26:02 GMT
+
+	{ "error": "Login required" }
+
+
+## Wrong joke id
+`[GET, PUT, DELETE] /api/v1/jokes/:id`
+	
+	>>> curl -i "http://localhost:5000/api/v1/jokes/1024?login=Gunter"
+	
+	HTTP/1.0 404 NOT FOUND
+	Content-Type: application/json
+	Content-Length: 46
+	Server: Werkzeug/0.16.0 Python/3.7.3
+	Date: Mon, 14 Oct 2019 15:31:50 GMT
+
+	{ "error": "You have no joke with id 1024" }
+
+
+## Joke validation error
+`PUT /api/v1/jokes/:id`
+`POST /api/v1/jokes`
+	
+	>>> curl -X POST -F "form=without joke" -i "http://localhost:5000/api/v1/jokes?login=Gunter"
+	
+	HTTP/1.0 400 BAD REQUEST
+	Content-Type: application/json
+	Content-Length: 38
+	Server: Werkzeug/0.16.0 Python/3.7.3
+	Date: Mon, 14 Oct 2019 15:38:18 GMT
+
+	{ "error": "Body have no field <joke>" }⏎
+	
+	>>> curl -X POST -F "joke=666" "http://localhost:5000/api/v1/jokes?login=Gunter"
+	
+	{ "error": "Wrong type for joke. Must be string" }
+	
+	>>> curl -X POST -F "joke=" "http://localhost:5000/api/v1/jokes?login=Gunter"
+	
+	{ "error": "Joke is empty" }
