@@ -3,10 +3,42 @@
 The REST API to the example app is described below.
 
 
+## Running the Project Locally:
+
+First of all
+```bash
+git clone https://github.com/madmaxeatfax/selectel_tz_rest.git
+cd selectel_tz
+```
+
+For fast setting, you can use bash script
+It will:
+1. Install requirements
+2. Export env variables
+3. Start postgresql server
+4. Create db tz_app and user tester:tester
+(Linux, macOS only)
+```bash
+source scripts/setup
+# for custom params use flags
+source scripts/setup -u differentUser -p userPass -d dbName
+```
+
+Here we go. Now you can run tests and flask app
+```bash
+source scripts/test
+flask run
+```
+	
+After using, you can clear traces with teardown script
+```bash
+source scripts/teardown
+```
+
 ## Get my jokes
 ### Request
 `GET /api/v1/jokes`
-
+	
 	curl -i "http://localhost:5000/api/v1/jokes?login=Gunter"
 
 ### Response
