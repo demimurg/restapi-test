@@ -2,8 +2,22 @@
 
 Multi-user REST API service providing CRUD for jokes, using external APIs.
 
+- [Launch app](#running-the-project-locally)
+- API
+  - [Get jokes](#get-my-jokes)
+  - [Create joke](#create-new-joke)
+  - [Get joke :id](#get-my-joke)
+  - [Update joke :id](#update-my-joke)
+  - [Delete joke :id](#delete-my-joke)
+  - [Get random](#get-random-joke)
+- Errors
+  - [Without login](#request-without-login)
+  - [Wrong :id](#wrong-joke-id)
+  - [Joke validation](#joke-validation-error)
+  
 
-## Running the Project Locally:
+
+## Running the Project Locally
 
 First of all
 ```bash
