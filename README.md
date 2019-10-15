@@ -1,6 +1,6 @@
-# REST API
+# JOKE_API
 
-The REST API to the example app is described below.
+Multi-user REST API service providing CRUD for jokes, using external APIs.
 
 
 ## Running the Project Locally:
@@ -11,8 +11,7 @@ git clone https://github.com/madmaxeatfax/selectel_tz_rest.git
 cd selectel_tz
 ```
 
-For fast setting, you can use bash script
-It will:
+For fast setting, you can use bash script. It will:
 1. Install requirements
 2. Export env variables
 3. Start postgresql server
