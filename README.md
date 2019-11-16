@@ -1,12 +1,57 @@
-# REST API
+# JOKE_API
 
-The REST API to the example app is described below.
+Multi-user REST API service providing CRUD for jokes, using external APIs.
 
+- [Launch app](#running-the-project-locally)
+- API
+  - [Get jokes](#get-my-jokes)
+  - [Create joke](#create-new-joke)
+  - [Get joke :id](#get-my-joke)
+  - [Update joke :id](#update-my-joke)
+  - [Delete joke :id](#delete-my-joke)
+  - [Get random](#get-random-joke)
+- Errors
+  - [Without login](#request-without-login)
+  - [Wrong :id](#wrong-joke-id)
+  - [Joke validation](#joke-validation-error)
+  
+
+
+## Running the Project Locally
+
+First of all
+```bash
+git clone https://github.com/madmaxeatfax/selectel_tz_rest.git
+cd selectel_tz
+```
+
+For fast setting, you can use bash script. It will:
+1. Install requirements
+2. Export env variables
+3. Start postgresql server
+4. Create db tz_app and user tester:tester
+(Linux, macOS only)
+```bash
+source scripts/setup
+# for custom params use flags
+source scripts/setup -u differentUser -p userPass -d dbName
+```
+
+Here we go. Now you can run tests and flask app
+```bash
+source scripts/test
+flask run
+```
+	
+After using, you can clear traces with teardown script
+```bash
+source scripts/teardown
+```
 
 ## Get my jokes
 ### Request
 `GET /api/v1/jokes`
-
+	
 	curl -i "http://localhost:5000/api/v1/jokes?login=Gunter"
 
 ### Response
@@ -125,3 +170,57 @@ The REST API to the example app is described below.
 	  "joke": { "content": "Chuck Norris can multiply length x width x heigth when finding the circumference of a circle.", "id": 2 },
 	  "user_id": 1
 	}
+	
+# Errors handling
+
+## Request without login
+`[GET, POST] /api/v1/jokes`
+`[GET, PUT, DELETE] /api/v1/jokes/:id`
+`GET /api/v1/jokes/random`
+	
+	>>> curl -i "http://localhost:5000/api/v1/jokes"
+	
+	HTTP/1.0 403 FORBIDDEN
+	Content-Type: application/json
+	Content-Length: 27
+	Server: Werkzeug/0.16.0 Python/3.7.3
+	Date: Mon, 14 Oct 2019 15:26:02 GMT
+
+	{ "error": "Login required" }
+
+
+## Wrong joke id
+`[GET, PUT, DELETE] /api/v1/jokes/:id`
+	
+	>>> curl -i "http://localhost:5000/api/v1/jokes/1024?login=Gunter"
+	
+	HTTP/1.0 404 NOT FOUND
+	Content-Type: application/json
+	Content-Length: 46
+	Server: Werkzeug/0.16.0 Python/3.7.3
+	Date: Mon, 14 Oct 2019 15:31:50 GMT
+
+	{ "error": "You have no joke with id 1024" }
+
+
+## Joke validation error
+`PUT /api/v1/jokes/:id`
+`POST /api/v1/jokes`
+	
+	>>> curl -X POST -F "form=without joke" -i "http://localhost:5000/api/v1/jokes?login=Gunter"
+	
+	HTTP/1.0 400 BAD REQUEST
+	Content-Type: application/json
+	Content-Length: 38
+	Server: Werkzeug/0.16.0 Python/3.7.3
+	Date: Mon, 14 Oct 2019 15:38:18 GMT
+
+	{ "error": "Body have no field <joke>" }⏎
+	
+	>>> curl -X POST -F "joke=666" "http://localhost:5000/api/v1/jokes?login=Gunter"
+	
+	{ "error": "Wrong type for joke. Must be string" }
+	
+	>>> curl -X POST -F "joke=" "http://localhost:5000/api/v1/jokes?login=Gunter"
+	
+	{ "error": "Joke is empty" }
