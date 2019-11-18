@@ -21,8 +21,8 @@ Multi-user REST API service providing CRUD for jokes, using external APIs.
 
 First of all
 ```bash
-git clone https://github.com/madmaxeatfax/selectel_tz_rest.git
-cd selectel_tz
+git clone https://github.com/madmaxeatfax/restapi-test.git
+cd restapi-test
 ```
 
 For fast setting, you can use bash script. It will:
@@ -46,6 +46,19 @@ flask run
 After using, you can clear traces with teardown script
 ```bash
 source scripts/teardown
+```
+
+## Using Docker (new!)
+
+```bash
+git clone https://github.com/madmaxeatfax/restapi-test.git
+cd restapi-test
+
+docker-compose up
+source scripts/test
+# then test manually on localhost:5000
+
+docker-compose down
 ```
 
 ## Get my jokes
