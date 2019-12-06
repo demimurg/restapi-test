@@ -24,7 +24,7 @@ def test_jokes_random(client):
     testcase_num = 5
 
     for i in range(testcase_num):
-        res = client.get(url + "?login=%s" % login)
+        res = client.get(url, headers={"auth": login})
 
         assert res.status_code == 200,\
             "status code signals problem"
@@ -60,8 +60,8 @@ def test_jokes(client):
     # TEST POST
     for j in cases:
         res = client.post(
-            url+"?login=%s" % login,
-            data={"joke": j}
+            url, data={"joke": j},
+            headers={"auth": login}
         )
 
         assert res.status_code == 201,\
@@ -84,7 +84,7 @@ def test_jokes(client):
         "[POST] sent != recieved"
 
     # TEST GET
-    res = client.get(url+"?login=%s" % login)
+    res = client.get(url, headers={"auth": login})
 
     assert res.status_code == 200,\
         "[GET] wrong status code"
@@ -105,12 +105,12 @@ def test_jokes_id(client):
     cases = ["not funny joke", "not realy funny joke"]
     for j in cases:
         client.post(
-            base_url+"?login=%s" % login,
-            data={"joke": j}
+            base_url, data={"joke": j},
+            headers={"auth": login}
         )
 
     # TEST GET
-    res = client.get(base_url+"/1"+"?login=%s" % login)
+    res = client.get(base_url+"/1", headers={"auth": login})
 
     assert res.status_code == 200,\
         "[GET] wrong status code"
@@ -127,8 +127,8 @@ def test_jokes_id(client):
     red_n, red_text = len(cases)-1, "very funny joke"
     url = base_url+"/%d" % red_n
     res = client.put(
-        url+"?login=%s" % login,
-        data={"joke": red_text}
+        url, data={"joke": red_text},
+        headers={"auth": login}
     )
 
     assert res.status_code == 200,\
@@ -145,7 +145,7 @@ def test_jokes_id(client):
         "[PUT] user joke haven't been updated"
 
     # TEST DELETE
-    res = client.delete(url+"?login=%s" % login)
+    res = client.delete(url, headers={"auth": login})
 
     assert res.status_code == 200,\
         "[DELETE] wrong status code"
@@ -163,7 +163,7 @@ def test_jokes_id(client):
     # WRONG ID
     for method in ["GET", "PUT", "DELETE"]:
         req = getattr(client, method.lower())
-        res = req(base_url+"/666?login=%s" % login)
+        res = req(base_url+"/666", headers={"auth": login})
 
         assert res.status_code == 404,\
             "jokes table haven't joke with id=666"
@@ -180,23 +180,23 @@ def test_invalid_joke(client):
 
     # For correct work of PUT/update operation
     res = client.post(
-        "/api/v1/jokes?login=%s" % login,
-        data={"joke": "some joke"}
+        "/api/v1/jokes", data={"joke": "some joke"},
+        headers={"auth": login}
     )
     assert res.status_code == 201
 
     for r, m in routes_methods:
         req = getattr(client, m.lower())
 
-        res = req(r+"?login=%s" % login, data={"Charli": "Kaufman"})
+        res = req(r, data={"Charli": "Kaufman"}, headers={"auth": login})
         assert res.status_code == 400\
             and res.json["error"] == "Body have no field <joke>"
 
-        res = req(r+"?login=%s" % login, data={"joke": 124})
+        res = req(r, data={"joke": 124}, headers={"auth": login})
         assert res.status_code == 400\
             and res.json["error"] == "Wrong type for joke. Must be string"
 
-        res = req(r+"?login=%s" % login, data={"joke": ""})
+        res = req(r, data={"joke": ""}, headers={"auth": login})
         assert res.status_code == 400\
             and res.json["error"] == "Joke is empty"
 

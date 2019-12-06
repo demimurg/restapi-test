@@ -14,7 +14,7 @@ Multi-user REST API service providing CRUD for jokes, using external APIs.
   - [Without login](#request-without-login)
   - [Wrong :id](#wrong-joke-id)
   - [Joke validation](#joke-validation-error)
-  
+
 
 
 ## Running the Project Locally
@@ -42,7 +42,7 @@ Here we go. Now you can run tests and flask app
 source scripts/test
 flask run
 ```
-	
+
 After using, you can clear traces with teardown script
 ```bash
 source scripts/teardown
@@ -55,7 +55,8 @@ git clone https://github.com/madmaxeatfax/restapi-test.git
 cd restapi-test
 
 docker-compose up
-source scripts/test
+source scripts/test # from container
+
 # then test manually on localhost:5000
 
 docker-compose down
@@ -64,7 +65,7 @@ docker-compose down
 ## Get my jokes
 ### Request
 `GET /api/v1/jokes`
-	
+
 	curl -i "http://localhost:5000/api/v1/jokes?login=Gunter"
 
 ### Response
@@ -89,7 +90,7 @@ docker-compose down
 ### Request
 `POST /api/v1/jokes`
 
-	curl -X POST -F joke="some joke" -i "http://localhost:5000/api/v1/jokes?login=Gunter"
+	curl -X POST -F joke="some joke" -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes"
 
 ### Response
 
@@ -109,7 +110,7 @@ docker-compose down
 ### Request
 `GET /api/v1/jokes/:id`
 
-	curl -i "http://localhost:5000/api/v1/jokes/1?login=Gunter"
+	curl -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes/1"
 
 ### Response
 
@@ -129,7 +130,7 @@ docker-compose down
 ### Request
 `PUT /api/v1/jokes/:id`
 
-	curl -X PUT -F joke="another joke" -i "http://localhost:5000/api/v1/jokes/1?login=Gunter"
+	curl -X PUT -F joke="another joke" -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes/1"
 
 ### Response
 
@@ -149,7 +150,7 @@ docker-compose down
 ### Request
 `DELETE /api/v1/jokes/:id`
 
-	curl -X DELETE -i "http://localhost:5000/api/v1/jokes/1?login=Gunter"
+	curl -X DELETE -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes/1"
 
 ### Response
 
@@ -169,7 +170,7 @@ docker-compose down
 ### Request
 `GET /api/v1/jokes/random`
 
-	curl -i "http://localhost:5000/api/v1/jokes/random?login=Gunter"
+	curl -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes/random"
 
 ### Response
 
@@ -183,16 +184,16 @@ docker-compose down
 	  "joke": { "content": "Chuck Norris can multiply length x width x heigth when finding the circumference of a circle.", "id": 2 },
 	  "user_id": 1
 	}
-	
+
 # Errors handling
 
 ## Request without login
 `[GET, POST] /api/v1/jokes`
 `[GET, PUT, DELETE] /api/v1/jokes/:id`
 `GET /api/v1/jokes/random`
-	
+
 	>>> curl -i "http://localhost:5000/api/v1/jokes"
-	
+
 	HTTP/1.0 403 FORBIDDEN
 	Content-Type: application/json
 	Content-Length: 27
@@ -204,9 +205,9 @@ docker-compose down
 
 ## Wrong joke id
 `[GET, PUT, DELETE] /api/v1/jokes/:id`
-	
-	>>> curl -i "http://localhost:5000/api/v1/jokes/1024?login=Gunter"
-	
+
+	>>> curl -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes/1024"
+
 	HTTP/1.0 404 NOT FOUND
 	Content-Type: application/json
 	Content-Length: 46
@@ -219,9 +220,9 @@ docker-compose down
 ## Joke validation error
 `PUT /api/v1/jokes/:id`
 `POST /api/v1/jokes`
-	
-	>>> curl -X POST -F "form=without joke" -i "http://localhost:5000/api/v1/jokes?login=Gunter"
-	
+
+	>>> curl -X POST -F "form=without joke" -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes"
+
 	HTTP/1.0 400 BAD REQUEST
 	Content-Type: application/json
 	Content-Length: 38
@@ -229,11 +230,11 @@ docker-compose down
 	Date: Mon, 14 Oct 2019 15:38:18 GMT
 
 	{ "error": "Body have no field <joke>" }⏎
-	
-	>>> curl -X POST -F "joke=666" "http://localhost:5000/api/v1/jokes?login=Gunter"
-	
+
+	>>> curl -X POST -F "joke=666" -H "login: Gunter" "http://localhost:5000/api/v1/jokes"
+
 	{ "error": "Wrong type for joke. Must be string" }
-	
-	>>> curl -X POST -F "joke=" "http://localhost:5000/api/v1/jokes?login=Gunter"
-	
+
+	>>> curl -X POST -F "joke=" -H "login: Gunter" "http://localhost:5000/api/v1/jokes"
+
 	{ "error": "Joke is empty" }
