@@ -8,10 +8,10 @@ from joke_api.models import (
 )
 
 
-# Fake register/auth. Parsed from query param "login="
 @app.before_request
 def auth():
-    query_login = request.args.get("login")
+    print(request.headers)
+    query_login = request.headers.get("auth")
     if query_login is None:
         abort(app.response_class(
             response=json.dumps({"error": "Login required"}),
@@ -120,7 +120,7 @@ def random_joke():
 
             if that_works == len(ext_api):
                 return {
-                    "error": "External API for random jokes doesn't working",
+                    "error": "External API for random jokes aren't working",
                 }, 500
 
     validate_joke(api_data)
