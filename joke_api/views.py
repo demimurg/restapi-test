@@ -9,10 +9,9 @@ from joke_api.models import (
 
 
 @app.before_request
-def auth():
-    print(request.headers)
-    query_login = request.headers.get("auth")
-    if query_login is None:
+def authorization():
+    auth = request.authorization
+    if auth is None or auth.username == "":
         abort(app.response_class(
             response=json.dumps({"error": "Login required"}),
             status=403,
@@ -20,9 +19,9 @@ def auth():
         ))
 
     user = db.session.query(User)\
-        .filter_by(login=query_login).first()
+        .filter_by(login=auth.username).first()
     if user is None:
-        user = User(login=query_login)
+        user = User(login=auth.username)
         db.session.add(user)
         db.session.commit()
 

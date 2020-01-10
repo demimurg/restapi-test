@@ -1,4 +1,5 @@
 import pytest
+import base64
 import sys
 
 sys.path.append("..")
@@ -17,6 +18,14 @@ def client():
     db.drop_all()
 
 
+def basic_auth(login, password):
+    creds = base64.b64encode(
+        bytes(login+":"+password, "utf-8")
+    ).decode()
+
+    return "Basic %s" % creds
+
+
 def test_jokes_random(client):
     url = "/api/v1/jokes/random"
     login, user_id = "FinnTheHuman", 1
@@ -24,7 +33,9 @@ def test_jokes_random(client):
     testcase_num = 5
 
     for i in range(testcase_num):
-        res = client.get(url, headers={"auth": login})
+        res = client.get(url, headers={
+            "Authorization": basic_auth(login, "null")
+        })
 
         assert res.status_code == 200,\
             "status code signals problem"
@@ -61,7 +72,7 @@ def test_jokes(client):
     for j in cases:
         res = client.post(
             url, data={"joke": j},
-            headers={"auth": login}
+            headers={"Authorization": basic_auth(login, "null")}
         )
 
         assert res.status_code == 201,\
@@ -84,7 +95,7 @@ def test_jokes(client):
         "[POST] sent != recieved"
 
     # TEST GET
-    res = client.get(url, headers={"auth": login})
+    res = client.get(url, headers={"Authorization": basic_auth(login, "null")})
 
     assert res.status_code == 200,\
         "[GET] wrong status code"
@@ -106,11 +117,13 @@ def test_jokes_id(client):
     for j in cases:
         client.post(
             base_url, data={"joke": j},
-            headers={"auth": login}
+            headers={"Authorization": basic_auth(login, "null")}
         )
 
     # TEST GET
-    res = client.get(base_url+"/1", headers={"auth": login})
+    res = client.get(base_url+"/1", headers={
+        "Authorization": basic_auth(login, "null")
+    })
 
     assert res.status_code == 200,\
         "[GET] wrong status code"
@@ -128,7 +141,7 @@ def test_jokes_id(client):
     url = base_url+"/%d" % red_n
     res = client.put(
         url, data={"joke": red_text},
-        headers={"auth": login}
+        headers={"Authorization": basic_auth(login, "null")}
     )
 
     assert res.status_code == 200,\
@@ -145,7 +158,9 @@ def test_jokes_id(client):
         "[PUT] user joke haven't been updated"
 
     # TEST DELETE
-    res = client.delete(url, headers={"auth": login})
+    res = client.delete(url, headers={
+        "Authorization": basic_auth(login, "null")
+    })
 
     assert res.status_code == 200,\
         "[DELETE] wrong status code"
@@ -163,7 +178,9 @@ def test_jokes_id(client):
     # WRONG ID
     for method in ["GET", "PUT", "DELETE"]:
         req = getattr(client, method.lower())
-        res = req(base_url+"/666", headers={"auth": login})
+        res = req(base_url+"/666", headers={
+            "Authorization": basic_auth(login, "null")
+        })
 
         assert res.status_code == 404,\
             "jokes table haven't joke with id=666"
@@ -181,22 +198,28 @@ def test_invalid_joke(client):
     # For correct work of PUT/update operation
     res = client.post(
         "/api/v1/jokes", data={"joke": "some joke"},
-        headers={"auth": login}
+        headers={"Authorization": basic_auth(login, "null")}
     )
     assert res.status_code == 201
 
     for r, m in routes_methods:
         req = getattr(client, m.lower())
 
-        res = req(r, data={"Charli": "Kaufman"}, headers={"auth": login})
+        res = req(r, data={"Charli": "Kaufman"}, headers={
+            "Authorization": basic_auth(login, "null")
+        })
         assert res.status_code == 400\
             and res.json["error"] == "Body have no field <joke>"
 
-        res = req(r, data={"joke": 124}, headers={"auth": login})
+        res = req(r, data={"joke": 124}, headers={
+            "Authorization": basic_auth(login, "null")
+        })
         assert res.status_code == 400\
             and res.json["error"] == "Wrong type for joke. Must be string"
 
-        res = req(r, data={"joke": ""}, headers={"auth": login})
+        res = req(r, data={"joke": ""}, headers={
+            "Authorization": basic_auth(login, "null")
+        })
         assert res.status_code == 400\
             and res.json["error"] == "Joke is empty"
 
