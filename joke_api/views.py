@@ -75,6 +75,8 @@ def specific_joke(id):
             if request.method == "DELETE":
                 db.session.delete(joke)
                 db.session.commit()
+
+                return {}, 200
             elif request.method == "PUT":
                 validate_joke(request.form)
 
