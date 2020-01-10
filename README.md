@@ -55,10 +55,9 @@ git clone https://github.com/madmaxeatfax/restapi-test.git
 cd restapi-test
 
 docker-compose up
-source scripts/test # from container
-
+# run the tests and output coverage
+docker-compose exec app bash -c "source scripts/test"
 # then test manually on localhost:5000
-
 docker-compose down
 ```
 
@@ -66,7 +65,7 @@ docker-compose down
 ### Request
 `GET /api/v1/jokes`
 
-	curl -i "http://localhost:5000/api/v1/jokes?login=Gunter"
+	curl -i -u "Gunter:" "http://localhost:5000/api/v1/jokes"
 
 ### Response
 
@@ -90,7 +89,7 @@ docker-compose down
 ### Request
 `POST /api/v1/jokes`
 
-	curl -X POST -F joke="some joke" -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes"
+	curl -X POST -F joke="some joke" -u "Gunter:" -i "http://localhost:5000/api/v1/jokes"
 
 ### Response
 
@@ -110,7 +109,7 @@ docker-compose down
 ### Request
 `GET /api/v1/jokes/:id`
 
-	curl -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes/1"
+	curl -u "Gunter:" -i "http://localhost:5000/api/v1/jokes/1"
 
 ### Response
 
@@ -130,7 +129,7 @@ docker-compose down
 ### Request
 `PUT /api/v1/jokes/:id`
 
-	curl -X PUT -F joke="another joke" -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes/1"
+	curl -X PUT -F joke="another joke" -u "Gunter:" -i "http://localhost:5000/api/v1/jokes/1"
 
 ### Response
 
@@ -150,7 +149,7 @@ docker-compose down
 ### Request
 `DELETE /api/v1/jokes/:id`
 
-	curl -X DELETE -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes/1"
+	curl -X DELETE -u "Gunter:" -i "http://localhost:5000/api/v1/jokes/1"
 
 ### Response
 
@@ -170,7 +169,7 @@ docker-compose down
 ### Request
 `GET /api/v1/jokes/random`
 
-	curl -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes/random"
+	curl -u "Gunter:" -i "http://localhost:5000/api/v1/jokes/random"
 
 ### Response
 
@@ -206,7 +205,7 @@ docker-compose down
 ## Wrong joke id
 `[GET, PUT, DELETE] /api/v1/jokes/:id`
 
-	>>> curl -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes/1024"
+	>>> curl -u "Gunter:" -i "http://localhost:5000/api/v1/jokes/1024"
 
 	HTTP/1.0 404 NOT FOUND
 	Content-Type: application/json
@@ -221,7 +220,7 @@ docker-compose down
 `PUT /api/v1/jokes/:id`
 `POST /api/v1/jokes`
 
-	>>> curl -X POST -F "form=without joke" -H "login: Gunter" -i "http://localhost:5000/api/v1/jokes"
+	>>> curl -X POST -F "form=without joke" -u "Gunter:" -i "http://localhost:5000/api/v1/jokes"
 
 	HTTP/1.0 400 BAD REQUEST
 	Content-Type: application/json
@@ -231,10 +230,10 @@ docker-compose down
 
 	{ "error": "Body have no field <joke>" }⏎
 
-	>>> curl -X POST -F "joke=666" -H "login: Gunter" "http://localhost:5000/api/v1/jokes"
+	>>> curl -X POST -F "joke=666" -u "Gunter:" "http://localhost:5000/api/v1/jokes"
 
 	{ "error": "Wrong type for joke. Must be string" }
 
-	>>> curl -X POST -F "joke=" -H "login: Gunter" "http://localhost:5000/api/v1/jokes"
+	>>> curl -X POST -F "joke=" -u "Gunter:" "http://localhost:5000/api/v1/jokes"
 
 	{ "error": "Joke is empty" }
